@@ -24,13 +24,15 @@
     bash -s -- --systemd -y  --accept-license
 
 
-- name: Enable dgraph services
-  shell: |
-    systemctl enable dgraph-alpha.service  
-    systemctl enable dgraph-ui.service
-    systemctl enable dgraph-zero.service 
+- name: Enable dgraph-alpha service
+  shell: systemctl enable dgraph-alpha.service  
     
 
+- name: Enable dgraph-ui service
+  shell: systemctl enable dgraph-ui.service
+
+- name: Enable dgraph-zero service
+  shell: systemctl enable dgraph-zero.service
 
 
 - name: Restart dgraph-alpha
