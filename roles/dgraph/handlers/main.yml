@@ -1,0 +1,3 @@
+- name: check_dgraph_service
+  debug:
+    var: check_dgraph_service.stdout

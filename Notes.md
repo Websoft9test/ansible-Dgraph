@@ -1,154 +1,184 @@
-# RabbitMQ Notes
+#  Dgraph Notes
 
-组件名称：RabbitMQ-Server  
-安装文档：https://www.rabbitmq.com/download.html  
-配置文档：https://www.rabbitmq.com/admin-guide.html  
-支持平台： Debian家族 | RHEL家族 | Windows | Kubernetes |Docker  
+组件名称：Dgraph
+安装文档：https://dgraph.io/downloads#download-linux  
+配置文档:  
+支持平台：Debian家族 | RHEL家族 | Windows |macOS |source |k8s |docker
 
-责任人：helin
+责任人：zxc
 
 ## 概要
 
-RabbitMQ是一款开源的MQ系统，它包含RabbitMQ-Server和RabbitMQ-Client，服务器上运行的是RabbitMQ-Server
+Dgraph是一个开放源代码，可扩展，分布式，高可用性和快速的图形数据库，从头开始设计以在生产中运行。
 
 ## 环境要求
 
-* 程序语言：Java 
-* 应用服务器：自带
-* 数据库：无
-* 依赖组件：Erlang
+* 程序语言：   Go
+* 应用服务器： apche 2.0
+* 数据库：dgraph
+* 依赖组件：dgraph-ratel   dgraph zero
 * 其他：
 
 ## 安装说明
 
-官方建议使用其自身提供的erlang和rabbitmq-server的仓库，不建议使用操作系统自带的仓库或其他第三方仓库。同时，官方提供了自动安装仓库的自动化脚本。
+本项目采用源码安装方式,直接从官网下载二进制文件。
 
 下面基于不同的安装平台，分别进行安装说明。
 
-### CentOS
+### CentOS  
 
 ```shell
-# 分别安装erlang源和rabbitmq-server源
-curl -s https://packagecloud.io/install/repositories/rabbitmq/erlang/script.rpm.sh | sudo bash
-curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.rpm.sh | sudo bash
+#安装dgraph,自动同意社区许可,自动创建服务单元文件 
+curl https://get.dgraph.io -sSf | bash -s -- --systemd -y  --accept-license
 
-# 安装
-yum install erlang rabbitmq-server -y
+#服务开机自启
+systemctl enable dgraph-alpha.service dgraph-ui.service dgraph-zero.service 
 ```
 
-### Ubuntu
+### Ubuntu (与centos相同)
 
 ```shell
-# 分别安装erlang源和rabbitmq-server源
-curl -s https://packagecloud.io/install/repositories/rabbitmq/erlang/script.deb.sh | sudo bash
-curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.deb.sh | sudo bash
 
-# 安装
-sudo apt-get update -y
-apt install erlang rabbitmq-server -y
 ```
 
 ## 路径
 
-* 程序路径：/usr/lib/rabbitmq/lib/rabbitmq_server-*
-* 日志路径：/var/log/rabbitmq  
-* 配置文件路径：  
+* 程序路径：/usr/local/bin/dgraph
+* 日志路径： /var/log/dgraph
+* 配置文件路径：
 * 其他...
 
-## 配置
+##配置
 
-安装完成后，需要依次完成如下配置
-
-```shell
-# Set RabbitMQ
-- name: Restart RabbitMQ
-  shell: systemctl start rabbitmq-server
-
-- name: Enable the management console of RabbitMQ
-  shell: rabbitmq-plugins enable rabbitmq_management
-
-- name: Create administrator for RabbitMQ console
-  shell: |
-    rabbitmqctl add_user admin admin
-    rabbitmqctl set_user_tags admin administrator
-```
+无
 
 ## 账号密码
 
+
 ### 数据库密码
 
-如果有数据库
+如果有数据库  
 
-* 数据库安装方式：包管理工具自带 or 自行安装
+* 数据库安装方式：
 * 账号密码：
 
 ### 后台账号
 
 如果有后台账号
 
-* 登录地址
-* 账号密码
+* 登录地址  http://Your ip:8000
+* 账号密码   
 * 密码修改方案：最好是有命令行修改密码的方案
-
 
 ## 服务
 
-本项目安装后自动生成：rabbitmq-server 服务
+本项目安装后自动生成：
 
-备注：如果开机没有服务，程序无法运行的情况下，需要自行编写服务后存放到项目中
+备注：本项目安装后自动生成服务,无需自行编写服务
 
-服务的模板如下：
+服务文件位置：/etc/systemd/system/
 
 ```
+#   dgraph-alpha.service:
 [Unit]
-Description=Redmine
-After=nginx.service
+Description=dgraph.io Alpha instance
+Wants=network.target
+After=network.target dgraph-zero.service
+Requires=dgraph-zero.service
+
 [Service]
-Environment=RAILS_ENV=production
 Type=simple
-WorkingDirectory=/data/wwwroot/redmine
-ExecStart=/usr/local/bin/puma -b tcp://127.0.0.1:9292 -e production 
-User=redmine
+WorkingDirectory=/var/lib/dgraph
+ExecStart=/usr/bin/bash -c 'dgraph alpha --lru_mb 2048 -p /var/lib/dgraph/p -w /var/lib/dgraph/w'
+Restart=on-failure
+StandardOutput=journal
+StandardError=journal
+User=dgraph
+Group=dgraph
+
 [Install]
 WantedBy=multi-user.target
+
+
+#   dgraph-zero.service:
+
+[Unit]
+Description=dgraph.io Zero instance
+Wants=network.target
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/var/lib/dgraph
+ExecStart=/usr/bin/bash -c 'dgraph zero --wal /var/lib/dgraph/zw'
+Restart=on-failure
+StandardOutput=journal
+StandardError=journal
+User=dgraph
+Group=dgraph
+
+[Install]
+WantedBy=multi-user.target
+RequiredBy=dgraph-alpha.service
+
+
+#  dgraph-ui.service:
+
+[Unit]
+Description=dgraph.io Web UI
+Wants=network.target
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/bash -c 'dgraph-ratel'
+Restart=on-failure
+StandardOutput=journal
+StandardError=journal
+User=dgraph
+Group=dgraph
+
+[Install]
+WantedBy=multi-user.target
+
 ```
 
 ## 环境变量
 
-列出需要增加的环境变量以及增加环境变量的命令：
-
-* 名称 | 路径
+ACCEPT_LICENSE：自动同意Dgraph社区许可的条款（默认值：“ n”）。
+INSTALL_IN_SYSTEMD：自动将Dgraph的安装创建为Systemd服务（默认值：“ n”）。
+VERSION：手动选择Dgraph的版本（默认值：最新的稳定版本）。
 
 ## 版本号
 
 通过如下的命令获取主要组件的版本号: 
 
 ```
-# Check RabbitMQ version
-sudo rabbitmqctl status | grep RabbitMQ*
-
-# Check Erlang version
-ls /usr/lib64/erlang
+# Check dgraph version
+ /usr/local/bin/dgraph version
 ```
 
 ## 常见问题
 
 #### 有没有管理控制台？
 
-*http:// 公网 IP:15672* 即可访问控制台，系统默认存在一个无法通过外网访问的guest/guest账号
+*http://Your ip:8000*即可访问控制台
 
 #### 本项目需要开启哪些端口？
 
-| item      | port  |
-| --------- | ----- |
-| lustering | 25672 |
-| AMQP      | 5672  |
-| http      | 15672 |
+| item   | port |
+| ------ | ---- |
+| dgraph | 8080 |
+| dgraph | 9080 |
+| dgraph | 5080 |
+| dgraph | 6080 |
+| dgraph | 8000 |
+| dgraph | 7080 |
 
 #### 有没有CLI工具？
 
-有，通过 `rabbitmqctl` 查看工具的说明
+无
 
 ## 日志
 
-* 2020-04-14 完成CentOS安装研究
+* 2020-05-18完成CentOS安装研究

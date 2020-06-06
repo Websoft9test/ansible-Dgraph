@@ -1,0 +1,51 @@
+# install dgraph by OS_family
+- name: Install this role on {{ansible_os_family}}
+  include: "{{ansible_os_family}}.yml"
+
+# configure dgraph
+
+- name: Create dgraph User
+  user:
+    name: dgraph
+    shell: /usr/sbin/nologin
+    home: /data/dgraph
+    create_home: no
+
+- name: Create dgraph directory
+  file:
+    path: /data/dgraph
+    state: directory
+    owner: dgraph
+    group: dgraph
+    
+- name: Setup dgraph
+  shell: |
+    curl {{dgraph_download_url}} -sSf
+    bash -s -- --systemd -y  --accept-license
+
+
+- name: Enable dgraph services
+  shell:
+    systemctl enable dgraph-alpha.service dgraph-ui.service dgraph-zero.service 
+    
+
+- name: Restart dgraph
+  service:
+    name: dgraph-alpha.service dgraph-ui.service dgraph-zero.service
+    state: restarted
+    enabled: yes
+
+# set soft link, -b cover the exist links
+# ln -sb src des
+- name: set soft link
+  shell: |
+    ln -sb /usr/local/bin/dgraph  /data/dgraph
+    ln -sb /var/log/dgraph  /data/log/dgraph
+
+
+
+# check service state
+- name: Check dgraph Service
+  shell: systemctl status dgraph-alpha.service dgraph-ui.service dgraph-zero.service | grep Active*
+  register: check_dgraph_service
+  notify: check_dgraph_service
