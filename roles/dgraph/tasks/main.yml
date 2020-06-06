@@ -25,8 +25,10 @@
 
 
 - name: Enable dgraph services
-  shell:
-    systemctl enable dgraph-alpha.service dgraph-ui.service dgraph-zero.service 
+  shell: |
+    systemctl enable dgraph-alpha.service  
+    systemctl enable dgraph-ui.service
+    systemctl enable dgraph-zero.service 
     
 
 
@@ -48,6 +50,7 @@
     name: dgraph-zero.service
     state: restarted
     enabled: yes
+
 # set soft link, -b cover the exist links
 # ln -sb src des
 - name: set soft link
@@ -59,6 +62,9 @@
 
 # check service state
 - name: Check dgraph Service
-  shell: systemctl status dgraph-alpha.service dgraph-ui.service dgraph-zero.service | grep Active*
+  shell: |
+  systemctl status dgraph-alpha.service | grep Active*
+  systemctl status dgraph-ui.service | grep Active*
+  systemctl dgraph-zero.service | grep Active*
   register: check_dgraph_service
   notify: check_dgraph_service
