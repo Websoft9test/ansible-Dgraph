@@ -19,9 +19,7 @@
     group: dgraph
     
 - name: Setup dgraph
-  shell: |
-    curl {{dgraph_download_url}} -sSf
-    bash -s -- --systemd -y  --accept-license
+  shell: curl {{dgraph_download_url}} -sSf | bash -s -- --systemd -y  --accept-license
 
 
 - name: Enable dgraph-alpha service
