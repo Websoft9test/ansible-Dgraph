@@ -62,9 +62,6 @@
 
 # check service state
 - name: Check dgraph Service
-  shell: |
-  systemctl status dgraph-alpha.service | grep Active*
-  systemctl status dgraph-ui.service | grep Active*
-  systemctl dgraph-zero.service | grep Active*
+  shell: systemctl status dgraph-alpha.service | grep Active*
   register: check_dgraph_service
   notify: check_dgraph_service
