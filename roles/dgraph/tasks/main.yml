@@ -56,7 +56,7 @@
 - name: set soft link
   shell: |
     ln -sb /usr/local/bin/dgraph  /data/dgraph
-    ln -sb /var/log/dgraph  /data/log/dgraph
+
 
 
 
